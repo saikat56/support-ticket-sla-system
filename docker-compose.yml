@@ -1,0 +1,126 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: ticket_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini:ro
+      - ./docker/php/zz-docker.conf:/usr/local/etc/php-fpm.d/zz-docker.conf:ro
+    networks:
+      - ticket_network
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  web:
+    image: nginx:alpine
+    container_name: ticket_web
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - ticket_network
+    depends_on:
+      - app
+
+  db:
+    image: mysql:8.0
+    container_name: ticket_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: support_ticket
+      MYSQL_USER: ticket_user
+      MYSQL_PASSWORD: ticket_password
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - "33066:3306"
+    volumes:
+      - ticket_db_data:/var/lib/mysql
+    networks:
+      - ticket_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "ticket_user", "-pticket_password"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:alpine
+    container_name: ticket_redis
+    restart: unless-stopped
+    ports:
+      - "63799:6379"
+    volumes:
+      - ticket_redis_data:/data
+    networks:
+      - ticket_network
+
+  queue:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: ticket_queue
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini:ro
+      - ./docker/php/zz-docker.conf:/usr/local/etc/php-fpm.d/zz-docker.conf:ro
+    entrypoint: ["php", "artisan", "queue:work", "--tries=3", "--timeout=120"]
+    networks:
+      - ticket_network
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: ticket_scheduler
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini:ro
+      - ./docker/php/zz-docker.conf:/usr/local/etc/php-fpm.d/zz-docker.conf:ro
+    entrypoint: ["sh", "-c", "while true; do php artisan schedule:run --verbose --no-interaction & sleep 60; done"]
+    networks:
+      - ticket_network
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: ticket_mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      - ticket_network
+
+networks:
+  ticket_network:
+    driver: bridge
+
+volumes:
+  ticket_db_data:
+    driver: local
+  ticket_redis_data:
+    driver: local
+
