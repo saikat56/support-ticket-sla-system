@@ -124,3 +124,4 @@ class SlaEscalationTest extends TestCase
         Notification::assertSentTo($this->agent, TicketSlaApproachingNotification::class);
     }
 }
+

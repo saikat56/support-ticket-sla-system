@@ -114,6 +114,22 @@ services:
     networks:
       - ticket_network
 
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: ticket_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 64M
+    networks:
+      - ticket_network
+    depends_on:
+      db:
+        condition: service_healthy
+
 networks:
   ticket_network:
     driver: bridge

@@ -124,3 +124,4 @@ class TicketCsvImportTest extends TestCase
         $response->assertHeader('Content-Disposition', 'attachment; filename="tickets_import_sample.csv"');
     }
 }
+

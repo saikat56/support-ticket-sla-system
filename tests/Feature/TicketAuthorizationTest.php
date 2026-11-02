@@ -155,3 +155,4 @@ class TicketAuthorizationTest extends TestCase
             ->assertForbidden();
     }
 }
+

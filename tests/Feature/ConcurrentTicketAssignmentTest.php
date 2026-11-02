@@ -149,3 +149,4 @@ class ConcurrentTicketAssignmentTest extends TestCase
         $this->assertEquals($this->agent2->id, $newTicket->fresh()->assigned_to_user_id);
     }
 }
+
