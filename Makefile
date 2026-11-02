@@ -1,4 +1,7 @@
-.PHONY: up down restart build logs exec migrate test seed fresh-seed import-sample
+.PHONY: setup up down restart build logs logs-queue logs-scheduler exec migrate seed fresh-seed test check-sla composer-install
+
+setup:
+	./bin/setup.sh
 
 up:
 	docker compose up -d
@@ -11,6 +14,9 @@ restart:
 
 build:
 	docker compose up -d --build
+
+composer-install:
+	docker compose exec app composer install
 
 logs:
 	docker compose logs -f
@@ -38,4 +44,3 @@ test:
 
 check-sla:
 	docker compose exec app php artisan tickets:check-sla
-

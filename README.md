@@ -66,25 +66,62 @@ The application runs entirely containerized via Docker Compose:
 ## Quick Start & Setup Instructions
 
 ### Prerequisites
-- Docker Engine & Docker Compose v2+ installed.
+The only prerequisite required on the host system is **Docker Engine & Docker Compose v2+** (no local PHP, Composer, or Node.js installation is required).
 
-### 1-Command Automated Setup
-Run the included setup script:
+---
+
+### Option 1: 1-Command Automated Setup (Recommended)
+After cloning the repository, run the included setup script:
 ```bash
+git clone https://github.com/saikat56/support-ticket-sla-system.git
+cd support-ticket-sla-system
 ./bin/setup.sh
 ```
 
-Or execute manually via Make:
+**What the setup script does automatically:**
+1. Creates `.env` from `.env.example`
+2. Builds and starts all 7 Docker containers
+3. Installs Composer dependencies inside the container if missing
+4. Waits for the MySQL database health check to pass
+5. Generates the Laravel `APP_KEY`
+6. Runs database migrations and seeds demo accounts and tickets
+7. Creates storage symlink
+
+---
+
+### Option 2: Step-by-Step Manual Setup
+If you prefer running commands manually:
 ```bash
-# 1. Start all containers
-make up
+# 1. Clone & enter project
+git clone https://github.com/saikat56/support-ticket-sla-system.git
+cd support-ticket-sla-system
 
-# 2. Run migrations and seed database
-make fresh-seed
+# 2. Copy environment variables
+cp .env.example .env
 
-# 3. Access web application
-open http://localhost:8000
+# 3. Build & start all Docker containers
+docker compose up -d --build
+
+# 4. Install Composer dependencies inside container
+docker compose exec app composer install
+
+# 5. Generate application key
+docker compose exec app php artisan key:generate
+
+# 6. Run database migrations and seed demo data
+docker compose exec app php artisan migrate:fresh --seed
+
+# 7. Create storage symlink
+docker compose exec app php artisan storage:link
 ```
+
+---
+
+### Access URLs
+Once setup completes, open your browser:
+* **Application Web UI:** [http://localhost:8000](http://localhost:8000)
+* **Mailpit (Email Inspector):** [http://localhost:8025](http://localhost:8025)
+* **phpMyAdmin (Database Management):** [http://localhost:8080](http://localhost:8080)
 
 ---
 
